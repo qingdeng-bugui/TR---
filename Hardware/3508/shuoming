@@ -16,6 +16,28 @@
 *Motor_SetAllCurrent(1.0f); → 给全部轮子电流指令（仅电流模式生效）
 */
 
+反馈与诊断（吸收第二套 + 官方 C620 协议）
+/*
+*Motor_GetTemperature(1);   → 1 号电机温度，单位：°C（反馈帧 data[6]）
+*Motor_GetErrorCode(1);     → 1 号电机错误码（data[7]）：0 正常 / 3 三相线未接
+*                              4 位置传感器丢数据 / 5 ≥180°C / 8 过热 ≥125°C
+*Motor_GetCurrentAmpere(1); → 1 号实际转矩电流，单位：A（±16384 ↔ ±20A）
+*Motor_GetTorqueNm(1);      → 1 号输出扭矩估算值，单位：N·m（Kt=0.3，饱和时会偏大）
+*Motor_GetAngleRad(1);      → 1 号输出轴累计转角，单位：rad（多圈，上电起累计）
+*g_motor[1].distance_m;     → 1 号累计里程，单位：m
+*g_motor[1].wheel_rps;      → 1 号转速反馈，单位：转/秒
+*Motor_ResetPosition(1);    → 1 号里程/转角归零（相当于第二套的 Back2Zero）
+*Motor_ResetAllPosition();  → 全部里程/转角归零
+*/
+
+PID 两个可选开关（默认都不生效，行为与原来完全一致）
+/*
+*speed_deadband = 0.02f;    → 误差小于 0.02 转/秒时按零误差处理，压零速抖动
+*                             0.0f = 关闭（默认）
+*kd_alpha_speed = 0.3f;     → 微分项一阶低通，越小越平滑；1.0f = 不滤波（默认）
+*                             0.0f = 微分项冻结为 0
+*/
+
  TIM1更新中断每5ms调用一次,在这里执行PID控制 
 /*void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {

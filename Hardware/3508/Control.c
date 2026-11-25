@@ -1,8 +1,6 @@
 #include <stdlib.h>
 
-#include "Control.h"
-#include "PID.h"
-#include "Serial.h"
+#include "HeaderFiles.h"
 
 /*
  * 速度给定与控制节拍。

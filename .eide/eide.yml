@@ -26,6 +26,27 @@ virtualFolder:
                 - path: Core/Src/stm32f4xx_it.c
                 - path: Core/Src/stm32f4xx_hal_msp.c
               folders: []
+            - name: HeaderFiles
+              files:
+                - path: HeaderFiles/HeaderFiles.h
+              folders: []
+        - name: Function
+          files:
+            - path: Function/Function.c
+            - path: Function/Function.h
+          folders: []
+        - name: Hardware
+          files: []
+          folders:
+            - name: "3508"
+              files:
+                - path: Hardware/3508/Control.c
+                - path: Hardware/3508/Control.h
+                - path: Hardware/3508/PID.c
+                - path: Hardware/3508/PID.h
+                - path: Hardware/3508/Serial.c
+                - path: Hardware/3508/Serial.h
+              folders: []
     - name: Drivers
       files: []
       folders:
@@ -63,6 +84,9 @@ targets:
       incList:
         - .
         - Core/Inc
+        - HeaderFiles
+        - Function
+        - Hardware/3508
         - Drivers/STM32F4xx_HAL_Driver/Inc
         - Drivers/STM32F4xx_HAL_Driver/Inc/Legacy
         - Drivers/CMSIS/Device/ST/STM32F4xx/Include

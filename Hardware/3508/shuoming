@@ -1,0 +1,27 @@
+初始化部分
+/* 
+*Serial_Init();               清 C620 反馈数据 
+*Serial_CanInit(&hcan1);      配滤波器 + 启动 CAN + 开接收中断 
+*PID_Init();
+*/
+
+控制函数
+/*
+*Motor_SetSpeed(1, 1.0f);   → 只有 1 号轮子跑到 1 转/秒，其余不动
+*Motor_SetAllSpeed(-0.8f);  → 全部轮子反转 0.8 转/秒
+*Motor_Stop();              → 全部停止
+*Motor_GetSpeed(1);         → 获取 1 号轮子当前速度
+*Motor_SetMode();          → 切换速度模式 0/ 电流模式 1
+*Motor_SetCurrent(1, 1.0f); → 给1号轮子电流指令（仅电流模式生效）
+*Motor_SetAllCurrent(1.0f); → 给全部轮子电流指令（仅电流模式生效）
+*/
+
+ TIM1更新中断每5ms调用一次,在这里执行PID控制 
+/*void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
+{
+  if (htim->Instance == TIM1)
+  {
+    Motor_Update();          /* 四路速度环 + 电流下发
+  }
+}
+*/

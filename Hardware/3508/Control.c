@@ -15,6 +15,13 @@ static float speed_ref[MOTOR_COUNT + 1U];
 #define SPEED_ACCEL_LIMIT_RPS_S   4.3395526f      /* 每路缓启动加速度上限，单位：转/秒² */
 #define SPEED_CMD_LIMIT_RPS       6.943284f       /* 目标轮速限幅，单位：转/秒 */
 
+void M3508_Init(void)
+{
+    Serial_Init();              /* 清空 C620 反馈数据 */
+    Serial_CanInit(&hcan1);     /* 配置滤波器、启动 CAN、开启接收中断 */
+    PID_Init();
+}
+
 /* 给某一路设定轮子目标转速，单位：转/秒；motor_no 为 1~MOTOR_COUNT（= C620 的 ID） */
 void Motor_SetSpeed(uint8_t motor_no, float wheel_rps)
 {

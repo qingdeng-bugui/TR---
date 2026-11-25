@@ -14,6 +14,9 @@
  * Motor_SetAllSpeed(1.2f);   → 所有轮子一起 1.2 转/秒
  * Motor_Stop();              → 全部停止
  */
+
+void M3508_Init(void);
+
 void Motor_SetSpeed(uint8_t motor_no, float wheel_rps);
 
 /* 所有路设成同一个目标速度 */
@@ -34,8 +37,8 @@ void Motor_Update(void);
  *   Motor_SetMode(MOTOR_MODE_CURRENT);
  *   Motor_SetCurrent(1, 600);     → 1 号电机恒定电流 600 counts ≈ 0.73A
  */
-#define MOTOR_MODE_SPEED    0U              /* 速度模式 */
-#define MOTOR_MODE_CURRENT  1U              /* 电流模式 */
+#define MOTOR_MODE_SPEED   0U /* 速度模式 */
+#define MOTOR_MODE_CURRENT 1U /* 电流模式 */
 
 void Motor_SetMode(uint8_t mode);
 void Motor_SetCurrent(uint8_t motor_no, int16_t current);

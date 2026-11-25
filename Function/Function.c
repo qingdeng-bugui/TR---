@@ -18,7 +18,5 @@
 
 void Sys_Init(void)
 {
-    Serial_Init();
-    Serial_CanInit(&hcan1);
-    PID_Init();
+    M3508_Init();
 }

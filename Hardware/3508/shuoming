@@ -1,49 +1,67 @@
-初始化部分
-/* 
-*Serial_Init();               清 C620 反馈数据 
-*Serial_CanInit(&hcan1);      配滤波器 + 启动 CAN + 开接收中断 
-*PID_Init();
-*/
+/**
+ ******************************************************************************
+ * @file           : 3508
+ * @brief          : 机器人底盘3508驱动
+ *
+ * Copyright (c) 2026 Mike Ying, XHU-RRC and 阿加犀(APLUX).
+ * 注意借用用24届软件组长 Joe Zheng的xihualib
+ * 在郑学长指导下完成，如有bug，可能是因为我们能力欠缺，也希望共同完善
+ * 部分参数还在完善，如现在就想看，可以去参考R1底盘代码
+ * pid实际参数需根据底盘实际调节，空载和负载均不一样，此处参数仅用于测试使用
+ */
 
-控制函数
-/*
-*Motor_SetSpeed(1, 1.0f);   → 只有 1 号轮子跑到 1 转/秒，其余不动
-*Motor_SetAllSpeed(-0.8f);  → 全部轮子反转 0.8 转/秒
-*Motor_Stop();              → 全部停止
-*Motor_GetSpeed(1);         → 获取 1 号轮子当前速度
-*Motor_SetMode();          → 切换速度模式 0/ 电流模式 1
-*Motor_SetCurrent(1, 1.0f); → 给1号轮子电流指令（仅电流模式生效）
-*Motor_SetAllCurrent(1.0f); → 给全部轮子电流指令（仅电流模式生效）
-*/
+初始化部分（最后放在了系统初始化里面）
+    /*
+     *Serial_Init();               清 C620 反馈数据
+     *Serial_CanInit(&hcan1);      配滤波器 + 启动 CAN + 开接收中断
+     *PID_Init();
+     */
 
-反馈与诊断（吸收第二套 + 官方 C620 协议）
-/*
-*Motor_GetTemperature(1);   → 1 号电机温度，单位：°C（反馈帧 data[6]）
-*Motor_GetErrorCode(1);     → 1 号电机错误码（data[7]）：0 正常 / 3 三相线未接
-*                              4 位置传感器丢数据 / 5 ≥180°C / 8 过热 ≥125°C
-*Motor_GetCurrentAmpere(1); → 1 号实际转矩电流，单位：A（±16384 ↔ ±20A）
-*Motor_GetTorqueNm(1);      → 1 号输出扭矩估算值，单位：N·m（Kt=0.3，饱和时会偏大）
-*Motor_GetAngleRad(1);      → 1 号输出轴累计转角，单位：rad（多圈，上电起累计）
-*g_motor[1].distance_m;     → 1 号累计里程，单位：m
-*g_motor[1].wheel_rps;      → 1 号转速反馈，单位：转/秒
-*Motor_ResetPosition(1);    → 1 号里程/转角归零（相当于第二套的 Back2Zero）
-*Motor_ResetAllPosition();  → 全部里程/转角归零
-*/
+    控制函数
+        /*
+         *Motor_SetSpeed(1, 1.0f);   → 只有 1 号轮子跑到 1 转/秒，其余不动
+         *Motor_SetAllSpeed(-0.8f);  → 全部轮子反转 0.8 转/秒
+         *Motor_Stop();              → 全部停止
+         *Motor_GetSpeed(1);         → 获取 1 号轮子当前速度
+         *Motor_SetMode();          → 切换速度模式 0/ 电流模式 1
+         *Motor_SetCurrent(1, 1.0f); → 给1号轮子电流指令（仅电流模式生效）
+         *Motor_SetAllCurrent(1.0f); → 给全部轮子电流指令（仅电流模式生效）
+         */
 
-PID 两个可选开关（默认都不生效，行为与原来完全一致）
-/*
-*speed_deadband = 0.02f;    → 误差小于 0.02 转/秒时按零误差处理，压零速抖动
-*                             0.0f = 关闭（默认）
-*kd_alpha_speed = 0.3f;     → 微分项一阶低通，越小越平滑；1.0f = 不滤波（默认）
-*                             0.0f = 微分项冻结为 0
-*/
+        反馈与诊断（吸收第二套 +
+    官方 C620 协议）
+    /*
+     *Motor_GetTemperature(1);   → 1 号电机温度，单位：°C（反馈帧 data[6]）
+     *Motor_GetErrorCode(1);     → 1 号电机错误码（data[7]）：0 正常 / 3 三相线未接
+     *                              4 位置传感器丢数据 / 5 ≥180°C / 8 过热 ≥125°C
+     *Motor_GetCurrentAmpere(1); → 1 号实际转矩电流，单位：A（±16384 ↔ ±20A）
+     *Motor_GetTorqueNm(1);      → 1 号输出扭矩估算值，单位：N·m（Kt=0.3，饱和时会偏大）
+     *Motor_GetAngleRad(1);      → 1 号输出轴累计转角，单位：rad（多圈，上电起累计）
+     *g_motor[1].distance_m;     → 1 号累计里程，单位：m
+     *g_motor[1].wheel_rps;      → 1 号转速反馈，单位：转/秒
+     *Motor_ResetPosition(1);    → 1 号里程/转角归零（相当于第二套的 Back2Zero）
+     *Motor_ResetAllPosition();  → 全部里程/转角归零
+     */
 
- TIM1更新中断每5ms调用一次,在这里执行PID控制 
-/*void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
-{
-  if (htim->Instance == TIM1)
-  {
-    Motor_Update();          /* 四路速度环 + 电流下发
-  }
-}
-*/
+    PID 两个可选开关（默认都不生效，行为与原来完全一致）
+    /*
+     *speed_deadband = 0.02f;    → 误差小于 0.02 转/秒时按零误差处理，压零速抖动
+     *                             0.0f = 关闭（默认）
+     *kd_alpha_speed = 0.3f;     → 微分项一阶低通，越小越平滑；1.0f = 不滤波（默认）
+     *                             0.0f = 微分项冻结为 0
+     */
+
+    TIM6更新中断每5ms调用一次,
+    在这里执行PID控制
+    /* TIM_6 CAN1
+       注意在main.c USER CODE BEGIN 4 里加hal回调函数
+       void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
+       {
+       if(htim->Instance == TIM6)
+       {
+           Motor_Update();          /* 四路速度环 + 电流下发
+       }
+       }
+        *
+ USER CODE END 4
+    */

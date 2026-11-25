@@ -38,6 +38,18 @@
 /* C620协议给转子rpm，应用层统一使用轮子转/秒 */
 #define MOTOR_ROTOR_RPM_TO_WHEEL_RPS  (1.0f / (60.0f * MOTOR_GEAR_RATIO))
 
+/*
+ * C620 反馈量换算（依据官方说明书 v1.0 的 CAN 通信协议）：
+ *   反馈里的转矩电流是原始计数，±16384 对应 ±20A；
+ *   M3508 的转矩常数 Kt = 0.3 N·m/A，所以 1 个计数 ≈ 0.3662 mN·m。
+ * 这两个系数只用来把反馈量显示成人能看懂的单位，不参与控制。
+ */
+#define C620_CURRENT_COUNTS_TO_A      (20.0f / 16384.0f)                /* 1 count ≈ 1.2207 mA */
+#define C620_CURRENT_COUNTS_TO_NM     (0.3f * C620_CURRENT_COUNTS_TO_A) /* 1 count ≈ 0.3662 mN·m */
+
+/* C620 转子编码器一圈的计数，0~8191 对应 0~360° */
+#define C620_ENCODER_COUNTS_PER_REV   8192.0f
+
 /* 单个电调的反馈与里程状态，下标 = 电机号（1~MOTOR_COUNT） */
 typedef struct
 {
@@ -47,6 +59,8 @@ typedef struct
     volatile float    distance_m;   /* 上电后累计移动距离，单位：m */
     volatile uint32_t last_rx_tick; /* 最近一次收到反馈的 HAL_GetTick，单位：ms */
     volatile uint8_t  online;       /* 1=最近 100ms 内收到过反馈 */
+    volatile uint8_t  temperature;  /* 电机温度反馈，单位：°C，来自反馈帧 data[6] */
+    volatile uint8_t  error_code;   /* 电机错误码，来自反馈帧 data[7]，0=无异常 */
 
     int32_t  counts;                /* 累计转子编码器计数（含回绕处理） */
     uint16_t last_angle;            /* 上一帧角度，用于求增量 */
@@ -71,6 +85,40 @@ uint8_t Motor_IsOnline(uint8_t motor_no);
 
 /* 任意一个电调在线就返回 1 */
 uint8_t Motor_AnyOnline(void);
+
+/* ==================== 反馈量换算与位置控制 ==================== */
+
+/* 电机温度，单位：°C；motor_no = 1~MOTOR_COUNT，越界返回 0 */
+uint8_t Motor_GetTemperature(uint8_t motor_no);
+
+/*
+ * 电机错误码（官方 C620 说明书 反馈帧 data[7]）：
+ *   0 无异常、1 存储芯片无法访问、2 供电电压过高、3 三相线未接入、
+ *   4 位置传感器数据丢失、5 温度过高(≥180°C)、7 校准失败、8 过热(≥125°C)
+ * 多个故障同时存在时，返回数值更小的（级别更高）。motor_no 越界返回 0。
+ */
+uint8_t Motor_GetErrorCode(uint8_t motor_no);
+
+/* 反馈转矩电流换算成安培；motor_no 越界返回 0.0f */
+float Motor_GetCurrentAmpere(uint8_t motor_no);
+
+/*
+ * 反馈转矩电流换算成输出轴扭矩（估算值，单位：N·m）。
+ * Kt 取固定 0.3 N·m/A，大电流时磁路饱和会让结果偏大，仅用于调试观察。
+ */
+float Motor_GetTorqueNm(uint8_t motor_no);
+
+/* 减速箱输出轴累计转角，单位：rad（多圈，上电起累计）；越界返回 0.0f */
+float Motor_GetAngleRad(uint8_t motor_no);
+
+/*
+ * 里程/转角归零：清掉累计计数与累计距离，下一帧反馈重新建立角度基准。
+ * 对应第二份驱动的 djiMotor_Back2Zero()。motor_no = 1~MOTOR_COUNT。
+ */
+void Motor_ResetPosition(uint8_t motor_no);
+
+/* 全部电机的里程/转角归零 */
+void Motor_ResetAllPosition(void);
 
 /* ==================== CAN 硬件层 ==================== */
 

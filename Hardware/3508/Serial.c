@@ -19,6 +19,8 @@ void Serial_Init(void)
         g_motor[i].distance_m = 0.0f;
         g_motor[i].last_rx_tick = 0;
         g_motor[i].online = 0;
+        g_motor[i].temperature = 0;
+        g_motor[i].error_code = 0;
         g_motor[i].counts = 0;
         g_motor[i].last_angle = 0;
         g_motor[i].angle_ready = 0;
@@ -59,6 +61,12 @@ void Serial_ParseCanFrame(uint16_t can_id, const uint8_t data[8])
     /* data[4..5]：实际转矩电流，±16384≈±20A */
     m->current = (int16_t)(((uint16_t)data[4] << 8) | data[5]);
 
+    /* data[6]：电机温度，单位：°C */
+    m->temperature = data[6];
+
+    /* data[7]：电机错误码，0 = 无异常 */
+    m->error_code = data[7];
+
     m->last_rx_tick = HAL_GetTick();            /* HAL_GetTick单位：ms */
     m->online = 1;
 
@@ -91,7 +99,7 @@ void Serial_ParseCanFrame(uint16_t can_id, const uint8_t data[8])
     m->counts += delta;
 
     /* 累计距离：转子圈数 / 减速比 × 轮子周长 */
-    m->distance_m = ((float)m->counts / 8192.0f) *
+    m->distance_m = ((float)m->counts / C620_ENCODER_COUNTS_PER_REV) *
                     MOTOR_WHEEL_CIRCUMFERENCE_M / MOTOR_GEAR_RATIO;
 }
 
@@ -137,6 +145,88 @@ uint8_t Motor_AnyOnline(void)
         }
     }
     return 0;
+}
+
+/* ==================== 反馈量换算与位置控制 ==================== */
+
+/* 电机温度，单位：°C */
+uint8_t Motor_GetTemperature(uint8_t motor_no)
+{
+    if ((motor_no < 1U) || (motor_no > MOTOR_COUNT))
+    {
+        return 0;
+    }
+    return g_motor[motor_no].temperature;
+}
+
+/* 电机错误码，0 = 无异常 */
+uint8_t Motor_GetErrorCode(uint8_t motor_no)
+{
+    if ((motor_no < 1U) || (motor_no > MOTOR_COUNT))
+    {
+        return 0;
+    }
+    return g_motor[motor_no].error_code;
+}
+
+/* 反馈转矩电流 -> 安培 */
+float Motor_GetCurrentAmpere(uint8_t motor_no)
+{
+    if ((motor_no < 1U) || (motor_no > MOTOR_COUNT))
+    {
+        return 0.0f;
+    }
+    return (float)g_motor[motor_no].current * C620_CURRENT_COUNTS_TO_A;
+}
+
+/* 反馈转矩电流 -> 输出轴扭矩估算值，单位：N·m */
+float Motor_GetTorqueNm(uint8_t motor_no)
+{
+    if ((motor_no < 1U) || (motor_no > MOTOR_COUNT))
+    {
+        return 0.0f;
+    }
+    return (float)g_motor[motor_no].current * C620_CURRENT_COUNTS_TO_NM;
+}
+
+/* 减速箱输出轴累计转角，单位：rad */
+float Motor_GetAngleRad(uint8_t motor_no)
+{
+    if ((motor_no < 1U) || (motor_no > MOTOR_COUNT))
+    {
+        return 0.0f;
+    }
+    return ((float)g_motor[motor_no].counts / C620_ENCODER_COUNTS_PER_REV) *
+           (2.0f * 3.1415926f) / MOTOR_GEAR_RATIO;
+}
+
+/*
+ * 里程/转角归零。
+ * counts 是唯一权威状态，distance_m 每帧都会由 counts 重算，
+ * 所以这里就算和 CAN 接收中断交错，最多一帧就自我修正。
+ * 清 angle_ready 是为了让下一帧反馈重新建立角度基准，避免产生虚假大角度。
+ */
+void Motor_ResetPosition(uint8_t motor_no)
+{
+    if ((motor_no < 1U) || (motor_no > MOTOR_COUNT))
+    {
+        return;
+    }
+
+    g_motor[motor_no].counts = 0;
+    g_motor[motor_no].distance_m = 0.0f;
+    g_motor[motor_no].angle_ready = 0;
+}
+
+/* 全部电机的里程/转角归零 */
+void Motor_ResetAllPosition(void)
+{
+    uint8_t i;
+
+    for (i = 1U; i <= MOTOR_COUNT; i++)
+    {
+        Motor_ResetPosition(i);
+    }
 }
 
 /* ==================== CAN 硬件层 ==================== */

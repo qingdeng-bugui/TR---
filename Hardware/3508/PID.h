@@ -18,6 +18,23 @@ extern float ki_speed;
 extern float kd_speed;
 extern float kff_speed;
 
+/* ============ 以下两项默认关闭，不改变原有控制行为 ============ */
+
+/*
+ * 误差死区，单位：转/秒。
+ * |误差| <= 该值时按零误差处理，用来压住零速时的来回抖。
+ * 0.0f = 关闭（默认）。
+ */
+extern float speed_deadband;
+
+/*
+ * 微分项一阶低通滤波系数，取值范围 (0,1]：
+ *   1.0f = 不滤波（默认，输出与加这个开关之前完全一致）；
+ *   越小滤波越强，越能压微分噪声；
+ *   0.0f = D 项冻结为 0（等于关掉微分）。
+ */
+extern float kd_alpha_speed;
+
 /* 清零全部电机的误差/积分/微分状态 */
 void PID_Init(void);
 

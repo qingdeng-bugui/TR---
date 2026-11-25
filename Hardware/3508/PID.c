@@ -10,6 +10,10 @@ float ki_speed = 62832.0f;                  /* 单位：电流指令/((rev/s)*s)
 float kd_speed = 23.04385f;                 /* 单位：电流指令/((rev/s)/s) */
 float kff_speed = 11.5f;                    /* 单位：电流指令/((rev/s)/s) */
 
+/* 两项可选的抗抖动开关，默认都是"不生效"，加了它们原有响应不变 */
+float speed_deadband = 0.0f;                /* 误差死区，单位：转/秒，0=关闭 */
+float kd_alpha_speed = 1.0f;                /* 微分之一阶滤波系数，1.0=不滤波 */
+
 /* 各电机的目标值，下标 = 电机号 1~MOTOR_COUNT（[0] 不用） */
 float speed_target[MOTOR_COUNT + 1U];       /* 单位：轮子转/秒 */
 
@@ -20,6 +24,7 @@ int16_t current_output[MOTOR_COUNT + 1U];   /* C620电流指令值，±16384≈�
 static float speed_ErrorInt[MOTOR_COUNT + 1U];  /* 单位：C620电流指令值 */
 static float speed_LastActual[MOTOR_COUNT + 1U];/* 上一周期反馈转速，用于微分 */
 static uint8_t speed_D_ready[MOTOR_COUNT + 1U]; /* 0=微分基准未建立，1=已建立 */
+static float speed_ChangeFilt[MOTOR_COUNT + 1U];/* 滤波后的速度变化率，(转/秒)/s */
 
 /* 输出与积分限幅 */
 #define SPEED_IO_LIMIT          16384.0f        /* C620 电流指令上限 */
@@ -41,6 +46,7 @@ void PID_Reset(uint8_t motor_no)
     speed_ErrorInt[motor_no] = 0.0f;
     speed_LastActual[motor_no] = 0.0f;
     speed_D_ready[motor_no] = 0;
+    speed_ChangeFilt[motor_no] = 0.0f;
 }
 
 void PID_Init(void)
@@ -76,6 +82,12 @@ void PID_speed(uint8_t motor_no, float Target_speed, float Target_change)
     /* 目标转速减去反馈转速，得到速度误差 */
     err = Target_speed - actual;
 
+    /* 误差死区：默认 0，等价于不处理 */
+    if ((speed_deadband > 0.0f) && (fabsf(err) <= speed_deadband))
+    {
+        err = 0.0f;
+    }
+
     /* 首拍（含掉线重连第一拍）用当前反馈建立基准，避免微分冲击 */
     if (speed_D_ready[motor_no] == 0)
     {
@@ -83,9 +95,37 @@ void PID_speed(uint8_t motor_no, float Target_speed, float Target_change)
         speed_D_ready[motor_no] = 1;
     }
 
-    /* 微分：对测量值微分，目标跳变不会产生微分冲击 */
-    derivative = -kd_speed * ((actual - speed_LastActual[motor_no]) / PID_TIME);
-    speed_LastActual[motor_no] = actual;
+    /* 微分：对测量值微分，目标跳变不会产生微分冲击；
+       可选一阶低通，kd_alpha_speed = 1.0f 时与原来逐位等价 */
+    {
+        float alpha = kd_alpha_speed;
+        float change;
+
+        if (alpha < 0.0f)
+        {
+            alpha = 0.0f;
+        }
+        if (alpha > 1.0f)
+        {
+            alpha = 1.0f;
+        }
+
+        change = (actual - speed_LastActual[motor_no]) / PID_TIME;
+        speed_LastActual[motor_no] = actual;
+
+        if (alpha < 1.0f)
+        {
+            speed_ChangeFilt[motor_no] = ((1.0f - alpha) * speed_ChangeFilt[motor_no]) +
+                                         (alpha * change);
+            change = speed_ChangeFilt[motor_no];
+        }
+        else
+        {
+            speed_ChangeFilt[motor_no] = change; /* 记下原始值，以后开滤波不会跳变 */
+        }
+
+        derivative = -kd_speed * change;
+    }
 
     /* 前馈：目标斜坡带来的已知加速度扰动 */
     feedforward = kff_speed * (Target_change / PID_TIME);

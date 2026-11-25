@@ -36,6 +36,7 @@ virtualFolder:
         - name: Function
           files:
             - path: Function/Function.c
+            - path: Protocol/protocol_decode.c
             - path: Function/Function.h
           folders: []
         - name: Hardware
@@ -87,6 +88,7 @@ targets:
         - USE_HAL_DRIVER
         - STM32F427xx
       incList:
+        - Protocol
         - .
         - Core/Inc
         - HeaderFiles

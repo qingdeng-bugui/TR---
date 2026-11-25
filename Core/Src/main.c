@@ -46,12 +46,15 @@
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
+static uint8_t g_uart_byte;          /* 串口中断接收用的单字节 */
+
 
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 /* USER CODE BEGIN PFP */
+void Protocol_DebugPrint(void);
 
 /* USER CODE END PFP */
 
@@ -96,6 +99,10 @@ int main(void)
   /* USER CODE BEGIN 2 */
     Sys_Init();
     HAL_TIM_Base_Start_IT(&htim6);
+      /* USART6 接 F103 接收端（PG9=RX），收 15 字节遥控帧 */
+    Protocol_Init();
+    HAL_UART_Receive_IT(&huart6, &g_uart_byte, 1);
+
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -105,6 +112,12 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
+        Protocol_Tick(HAL_GetTick(), 200);   // 200ms 没帧 → 失联
+
+        Protocol_DebugPrint();               // 每 200ms 打印一行解码结果（串口看）
+
+        Motor_SetSpeed(2, 1.0f);             // 原测试代码：2 号轮子 1 转/秒
+
     }
   /* USER CODE END 3 */
 }
@@ -160,6 +173,59 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
     if (htim->Instance == TIM6)
     {
         Motor_Update(); // 四路速度环 + 电流下发
+    }
+}
+
+/**
+  * 函    数：串口接收完成回调（每收 1 字节进一次）
+  * 说    明：中断里只喂字节；解码结果在主循环用。
+  */
+void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
+{
+    if (huart->Instance == USART6)
+    {
+        Protocol_Feed(g_uart_byte, HAL_GetTick());
+        HAL_UART_Receive_IT(&huart6, &g_uart_byte, 1);   // 必须重新挂
+    }
+}
+
+/**
+  * 函    数：串口错误回调（溢出/噪声）
+  * 说    明：出错后 HAL 会停掉接收，这里重新挂上，否则永久收不到。
+  */
+void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart)
+{
+    if (huart->Instance == USART6)
+    {
+        HAL_UART_Receive_IT(&huart6, &g_uart_byte, 1);
+    }
+}
+
+/**
+  * 函    数：调试打印（每 200ms 一行，从 PG14 发出去）
+  * 说    明：不用了就把调用处注释掉，或者把 PROTO_DEBUG 改成 0
+  */
+void Protocol_DebugPrint(void)
+{
+    static uint32_t s_tick;
+    char buf[80];
+    int  n;
+
+    if ((uint32_t)(HAL_GetTick() - s_tick) < 200U)
+    {
+        return;
+    }
+    s_tick = HAL_GetTick();
+
+    n = snprintf(buf, sizeof(buf),
+                 "Lx=%d Ly=%d Rx=%d Ry=%d Enc=%d Key=%02X Flg=%02X %s\r\n",
+                 Protocol_GetLx(), Protocol_GetLy(), Protocol_GetRx(), Protocol_GetRy(),
+                 Protocol_GetEnc1(), Protocol_GetKeys(), Protocol_GetFlags(),
+                 Protocol_GetLinkOk() ? "LINK" : "LOST");
+
+    if (n > 0)
+    {
+        HAL_UART_Transmit(&huart6, (uint8_t *)buf, (uint16_t)n, 10);
     }
 }
 

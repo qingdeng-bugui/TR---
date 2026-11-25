@@ -14,11 +14,13 @@
 
 #include "can.h"
 #include "gpio.h"
+#include "usart.h"
 
 #include "Function.h"
 #include "Serial.h"
 #include "PID.h"
 #include "Control.h"
+#include "protocol_decode.h"
 
 /************************* 宏定义 *************************/
 

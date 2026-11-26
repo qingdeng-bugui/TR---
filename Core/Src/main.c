@@ -19,6 +19,7 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "can.h"
+#include "spi.h"
 #include "tim.h"
 #include "gpio.h"
 
@@ -91,6 +92,8 @@ int main(void)
   MX_CAN1_Init();
   MX_CAN2_Init();
   MX_TIM6_Init();
+  MX_SPI4_Init();
+  MX_TIM1_Init();
   /* USER CODE BEGIN 2 */
     Sys_Init();
   /* USER CODE END 2 */

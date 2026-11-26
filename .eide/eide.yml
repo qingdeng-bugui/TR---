@@ -23,7 +23,6 @@ virtualFolder:
                 - path: Core/Src/main.c
                 - path: Core/Src/gpio.c
                 - path: Core/Src/can.c
-                - path: Core/Src/spi.c
                 - path: Core/Src/tim.c
                 - path: Core/Src/usart.c
                 - path: Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_uart.c
@@ -57,18 +56,6 @@ virtualFolder:
                 - path: Hardware/Debug/Wave.c
                 - path: Hardware/Debug/Wave.h
               folders: []
-            - name: "2006"
-              files:
-                - path: Hardware/2006/Motor_2006.c
-                - path: Hardware/2006/Motor_2006.h
-                - path: Hardware/2006/PID_2006.c
-                - path: Hardware/2006/PID_2006.h
-              folders: []
-            - name: Abs_Encoder
-              files:
-                - path: Hardware/Abs_Encoder/Abs_Encoder.c
-                - path: Hardware/Abs_Encoder/Abs_Encoder.h
-              folders: []
     - name: Drivers
       files: []
       folders:
@@ -88,7 +75,6 @@ virtualFolder:
             - path: Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_cortex.c
             - path: Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal.c
             - path: Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_exti.c
-            - path: Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_spi.c
             - path: Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_tim.c
             - path: Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_tim_ex.c
           folders: []
@@ -114,8 +100,6 @@ targets:
         - Function
         - Hardware/3508
         - Hardware/Debug
-        - Hardware/2006
-        - Hardware/Abs_Encoder
         - Drivers/STM32F4xx_HAL_Driver/Inc
         - Drivers/STM32F4xx_HAL_Driver/Inc/Legacy
         - Drivers/CMSIS/Device/ST/STM32F4xx/Include

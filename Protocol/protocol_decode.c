@@ -10,13 +10,9 @@
 /* 解析器状态全部放静态变量，对外只暴露函数 */
 static uint8_t  s_buf[PROTO_FRAME_LEN];   // 攒帧缓冲
 static uint8_t  s_idx;                    // 当前收到第几字节
-static uint8_t  s_last_seq;               // 上一帧序号
-static uint8_t  s_has_prev;               // 是否收到过至少一帧
 static uint32_t s_tick_ok;                // 最近一次收帧时刻(ms)
 static uint8_t  s_link_ok;                // 1 = 链路正常
-static uint32_t s_cnt_ok;                 // 校验通过帧数
-static uint32_t s_cnt_bad;                // 校验失败次数
-static uint32_t s_cnt_lost;               // 估算丢帧数
+static uint32_t s_cnt_ok;                 // 已收到的有效帧数（0 = 从没收到过）
 
 /************************ 函数定义 ************************/
 
@@ -67,14 +63,10 @@ void Protocol_Init(void)
     {
         s_buf[i] = 0;
     }
-    s_idx      = 0;
-    s_last_seq = 0;
-    s_has_prev = 0;
-    s_tick_ok  = 0;
-    s_link_ok  = 0;
-    s_cnt_ok   = 0;
-    s_cnt_bad  = 0;
-    s_cnt_lost = 0;
+    s_idx     = 0;
+    s_tick_ok = 0;
+    s_link_ok = 0;
+    s_cnt_ok  = 0;
 }
 
 /************************************************************
@@ -109,16 +101,6 @@ uint8_t Protocol_Feed(uint8_t byte, uint32_t now_ms)
     /* 收齐 15 字节：校验 */
     if (Sum14(s_buf) == s_buf[14])
     {
-        /* 序号连续性：正常应该 +1（允许 0~255 回绕） */
-        if (s_has_prev)
-        {
-            uint8_t expect = (uint8_t)(s_last_seq + 1U);
-            uint8_t diff   = (uint8_t)(s_buf[1] - expect);
-
-            s_cnt_lost += (uint32_t)diff;
-        }
-        s_last_seq = s_buf[1];
-        s_has_prev = 1;
         s_cnt_ok++;
         s_tick_ok = now_ms;
         s_link_ok = 1;
@@ -128,7 +110,6 @@ uint8_t Protocol_Feed(uint8_t byte, uint32_t now_ms)
     }
 
     /* 校验失败：窗口左移一格继续找（不清零，避免半帧死等） */
-    s_cnt_bad++;
     for (i = 1; i < PROTO_FRAME_LEN; i++)
     {
         s_buf[i - 1U] = s_buf[i];
@@ -179,26 +160,22 @@ int16_t Protocol_GetRy(void)    { return GetI16(s_buf, 8);  }
 int16_t Protocol_GetEnc1(void)  { return GetI16(s_buf, 10); }
 
 /************************************************************
- * 名称   :     Protocol_GetKeys / GetFlags / GetSeq
- * 功能 	:     取按键位图、拨杆状态、帧序号
+ * 名称   :     Protocol_GetKeys / GetFlags
+ * 功能 	:     取按键位图、拨杆状态
  * 参数  	:     无
  * 返回值 :     对应字段（uint8）
  ************************************************************/
 
 uint8_t Protocol_GetKeys(void)  { return s_buf[12]; }
 uint8_t Protocol_GetFlags(void) { return s_buf[13]; }
-uint8_t Protocol_GetSeq(void)   { return s_buf[1];  }
 
 /************************************************************
- * 名称   :     Protocol_GetLinkOk / GetOkCount / GetBadCount / GetLostCount
- * 功能 	:     取链路状态和调试计数
+ * 名称   :     Protocol_GetLinkOk
+ * 功能 	:     取链路状态
  * 参数  	:     无
- * 返回值 :     对应字段
+ * 返回值 :     1 = 链路正常，0 = 失联
  ************************************************************/
 
-uint8_t  Protocol_GetLinkOk(void)   { return s_link_ok;   }
-uint32_t Protocol_GetOkCount(void)  { return s_cnt_ok;    }
-uint32_t Protocol_GetBadCount(void) { return s_cnt_bad;   }
-uint32_t Protocol_GetLostCount(void){ return s_cnt_lost;  }
+uint8_t Protocol_GetLinkOk(void) { return s_link_ok; }
 
 /****************************End*****************************/

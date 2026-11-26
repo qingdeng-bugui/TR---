@@ -50,14 +50,10 @@ int16_t Protocol_GetRy(void);                                   // 右摇杆 Y
 int16_t Protocol_GetEnc1(void);                                 // 编码器 1
 uint8_t Protocol_GetKeys(void);                                 // 按键位图
 uint8_t Protocol_GetFlags(void);                                // 拨杆 bit0/bit1
-uint8_t Protocol_GetSeq(void);                                  // 帧序号
 
-/* ---- 链路状态 / 调试计数 ---- */
+/* ---- 链路状态 ---- */
 
-uint8_t  Protocol_GetLinkOk(void);                              // 1=链路正常 0=失联
-uint32_t Protocol_GetOkCount(void);                             // 校验通过帧数
-uint32_t Protocol_GetBadCount(void);                            // 校验失败次数
-uint32_t Protocol_GetLostCount(void);                           // 按 seq 跳变估算的丢帧数
+uint8_t Protocol_GetLinkOk(void);                               // 1=链路正常 0=失联
 
 #endif
 

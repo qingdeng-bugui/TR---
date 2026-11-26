@@ -6,7 +6,7 @@
 /* 速度环增益：输入轮子速度误差(rev/s)，输出电流指令
  * kp：比例；ki：积分（每秒）；kd：对测量值微分；kff：目标斜率前馈 */
 float kp_speed = 7225.7f;                   /* 单位：电流指令/(rev/s) */
-float ki_speed = 62832.0f;                  /* 单位：电流指令/((rev/s)*s) */
+float ki_speed = 15000.0f;                  /* 单位：电流指令/((rev/s)*s) */
 float kd_speed = 23.04385f;                 /* 单位：电流指令/((rev/s)/s) */
 float kff_speed = 11.5f;                    /* 单位：电流指令/((rev/s)/s) */
 
@@ -28,7 +28,7 @@ static float speed_ChangeFilt[MOTOR_COUNT + 1U];/* 滤波后的速度变化率�
 
 /* 输出与积分限幅 */
 #define SPEED_IO_LIMIT          16384.0f        /* C620 电流指令上限 */
-#define SPEED_INT_LIMIT          17000.0f        /* 积分项上限 */
+#define SPEED_INT_LIMIT          16384.0f        /* 积分项上限 */
 
 /* 积分分离阈值（轮子转/秒）：误差大时不积分，避免阶跃时积分堆积 */
 #define SPEED_INT_SEPARATION     3.18f

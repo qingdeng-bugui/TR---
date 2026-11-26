@@ -51,6 +51,11 @@ virtualFolder:
                 - path: Hardware/3508/Serial.c
                 - path: Hardware/3508/Serial.h
               folders: []
+            - name: Debug
+              files:
+                - path: Hardware/Debug/Wave.c
+                - path: Hardware/Debug/Wave.h
+              folders: []
     - name: Drivers
       files: []
       folders:
@@ -94,6 +99,7 @@ targets:
         - HeaderFiles
         - Function
         - Hardware/3508
+        - Hardware/Debug
         - Drivers/STM32F4xx_HAL_Driver/Inc
         - Drivers/STM32F4xx_HAL_Driver/Inc/Legacy
         - Drivers/CMSIS/Device/ST/STM32F4xx/Include
@@ -218,6 +224,11 @@ targets:
         otherCmds: ""
         proType: 1
         speed: 8000
+      OpenOCD:
+        baseAddr: "0x08000000"
+        bin: ""
+        interface: cmsis-dap
+        target: stm32f4x
       STLink:
         address: "0x08000000"
         bin: ""
@@ -228,4 +239,4 @@ targets:
         resetMode: default
         runAfterProgram: true
         speed: 4000
-    uploader: STLink
+    uploader: OpenOCD

@@ -20,6 +20,7 @@
 #include "PID.h"
 #include "Control.h"
 #include "protocol_decode.h"
+#include "Wave.h"
 
 /************************* 宏定义 *************************/
 

@@ -159,6 +159,8 @@ int main(void)
         Protocol_Tick(HAL_GetTick(), 200); // 200ms 没帧 → 失联
 
         Test_Motor2_ByJoystick(); // 验证：右摇杆左右 → 2 号电机正反转/速度
+
+        Wave_Send(); // UART8 发波形：当前速度,目标速度
     }
   /* USER CODE END 3 */
 }
@@ -214,6 +216,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
     if (htim->Instance == TIM6)
     {
         Motor_Update(); // 四路速度环 + 电流下发
+        Wave_Sample();  // 采一拍波形（只入队，发送放主循环）
     }
 }
 

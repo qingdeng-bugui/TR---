@@ -12,8 +12,8 @@ static int16_t current_command[MOTOR_COUNT + 1U];
 static uint8_t s_mode = MOTOR_MODE_SPEED;
 static float speed_ref[MOTOR_COUNT + 1U];
 
-#define SPEED_ACCEL_LIMIT_RPS_S   4.3395526f      /* 每路缓启动加速度上限，单位：转/秒² */
-#define SPEED_CMD_LIMIT_RPS       6.943284f       /* 目标轮速限幅，单位：转/秒 */
+#define SPEED_ACCEL_LIMIT_RPS_S   20.0f      /* 每路缓启动加速度上限，单位：转/秒² */
+#define SPEED_CMD_LIMIT_RPS       8.0f       /* 目标轮速限幅，单位：转/秒 */
 
 void M3508_Init(void)
 {

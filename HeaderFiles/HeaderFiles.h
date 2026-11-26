@@ -21,6 +21,7 @@
 #include "Control.h"
 #include "protocol_decode.h"
 #include "Wave.h"
+#include "PID_2006.h"
 
 /************************* 宏定义 *************************/
 

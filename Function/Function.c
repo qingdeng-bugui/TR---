@@ -19,4 +19,5 @@
 void Sys_Init(void)
 {
     M3508_Init();
+    Protocol_Init();
 }
